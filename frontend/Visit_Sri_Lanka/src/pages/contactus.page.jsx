@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from 'react-router';
+import emailjs from '@emailjs/browser';
 import Navbar from "../components/Navbar";
 import { 
   Phone, 
@@ -18,6 +19,12 @@ import {
   Play,
   ShieldCheck
 } from 'lucide-react';
+
+// ─── Replace these with your actual EmailJS credentials ───────────────────────
+const EMAILJS_SERVICE_ID  = 'service_t3efee9';  
+const EMAILJS_TEMPLATE_ID = 'template_gc0a628';  
+const EMAILJS_PUBLIC_KEY  = 'YldJN7cxk4m9Xk7GL';   
+// ─────────────────────────────────────────────────────────────────────────────
 
 const FAQItem = ({ question, answer }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -74,14 +81,43 @@ const ContactPage = () => {
   const [formState, setFormState] = useState({ name: '', email: '', subject: 'General Inquiry', message: '' });
   const [showSuccess, setShowSuccess] = useState(false);
   const [isCaptchaChecked, setIsCaptchaChecked] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+
     if (!isCaptchaChecked) {
       alert("Please verify that you are not a robot.");
       return;
     }
-    setShowSuccess(true);
+
+    setIsLoading(true);
+
+    try {
+      await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        {
+          from_name:  formState.name,
+          from_email: formState.email,
+          subject:    formState.subject,
+          message:    formState.message,
+          reply_to:   formState.email,
+        },
+        EMAILJS_PUBLIC_KEY
+      );
+
+      setShowSuccess(true);
+      setFormState({ name: '', email: '', subject: 'General Inquiry', message: '' });
+      setIsCaptchaChecked(false);
+    } catch (err) {
+      console.error('EmailJS Error:', err);
+      setError('Something went wrong. Please try again or email us directly.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -194,12 +230,33 @@ const ContactPage = () => {
                   <ShieldCheck className="w-6 h-6 text-gray-300" />
                 </div>
 
+                {/* Error message */}
+                {error && (
+                  <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-600">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    {error}
+                  </div>
+                )}
+
                 <button 
                   type="submit"
-                  className="w-full bg-sri-teal text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-opacity-90 transition-all shadow-lg shadow-sri-teal/20"
+                  disabled={isLoading}
+                  className="w-full bg-sri-teal text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-opacity-90 transition-all shadow-lg shadow-sri-teal/20 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <Send className="w-4 h-4" />
-                  Send Message
+                  {isLoading ? (
+                    <>
+                      <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                      </svg>
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      Send Message
+                    </>
+                  )}
                 </button>
               </form>
             </div>
