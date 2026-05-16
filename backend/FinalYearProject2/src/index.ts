@@ -1,9 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import 'dotenv/config';
-import connectDB from './infrastructure/db/index.js';
-import RegistrationRouter from './api/Registration.js';
-import userContentRouter from './api/userContent.js';
+import connectDB from './infrastructure/db';
+import RegistrationRouter from './api/Registration';
+import userContentRouter from './api/userContent';
 
 const app = express();
 
