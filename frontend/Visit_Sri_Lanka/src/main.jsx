@@ -4,7 +4,7 @@ import './index.css'
 import Home from './pages/home.page'
 import DestinationsPage from './pages/Destination.page'
 import DestinationDetailPage from './pages/Destinationdetail.page'
-import SearchRouter from './pages/SearchRouter';
+import SearchRouter from './pages/searchrouter';
 import AboutPage from './pages/about.page'
 import ContactUsPage from './pages/contactus.page'
 import ExperiencesPage from './pages/experiencewall.page'
