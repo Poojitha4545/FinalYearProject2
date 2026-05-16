@@ -1,0 +1,1 @@
+{"version":3,"file":"Registration.js","sourceRoot":"","sources":["../../src/api/Registration.ts"],"names":[],"mappings":";;;;;AAAA,sDAA8B;AAC9B,8DAA8D;AAE9D,MAAM,kBAAkB,GAAG,iBAAO,CAAC,MAAM,EAAE,CAAC;AAE5C,kBAAkB;KACZ,KAAK,CAAC,GAAG,CAAC;KACV,IAAI,CAAC,uBAAQ,CAAC,CAAC;AAErB,kBAAkB;KACZ,KAAK,CAAC,QAAQ,CAAC;KACf,IAAI,CAAC,oBAAK,CAAC,CAAC;AAElB,kBAAe,kBAAkB,CAAC"}
