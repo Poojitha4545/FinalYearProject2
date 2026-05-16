@@ -122,7 +122,7 @@ const ShareModal = ({ user, onClose, onPost }) => {
       formData.append("mediaType", selectedFile.type.startsWith("video/") ? "video" : "image");
 
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:3000/api/user-content", {
+      const res = await fetch("${import.meta.env.VITE_API_URL}/api/user-content", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -401,7 +401,7 @@ const ExperiencesPage = () => {
   // ── Fetch posts from backend ──────────────────────────────────────────────
   const fetchPosts = async () => {
     try {
-      const res  = await fetch("http://localhost:3000/api/user-content");
+      const res  = await fetch(`${import.meta.env.VITE_API_URL}/api/user-content`);
       const data = await res.json();
       const realPosts = (data.posts ?? []).map((p) => ({
         id:       p._id,

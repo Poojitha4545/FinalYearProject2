@@ -248,7 +248,7 @@ export default function DashboardPage() {
     const token = localStorage.getItem("token");
     if (!token) { setStatsLoading(false); return; }
 
-    fetch("http://localhost:3000/api/user-content/my-posts", {
+    fetch("${import.meta.env.VITE_API_URL}/api/user-content/my-posts", {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.ok ? r.json() : Promise.reject())
@@ -259,7 +259,7 @@ export default function DashboardPage() {
         setCommentsReceived(posts.reduce((sum, p) => sum + (p.comments?.length ?? 0), 0));
       })
       .catch(() => {
-        fetch("http://localhost:3000/api/user-content")
+        fetch(`${import.meta.env.VITE_API_URL}/api/user-content`)
           .then((r) => r.ok ? r.json() : Promise.reject())
           .then((data) => {
             const myPosts = (data.posts ?? []).filter(
