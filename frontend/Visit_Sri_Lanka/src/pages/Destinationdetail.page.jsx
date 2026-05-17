@@ -584,11 +584,11 @@ export default function DestinationDetailPage() {
 
             {/* AR Model Viewer */}
             <div className="bg-card rounded-xl border border-border shadow-lg overflow-hidden">
-              <div className="bg-primary px-6 py-4 flex items-center gap-3">
-                <IconAR className="w-6 h-6 text-primary-foreground" />
-                <h3 className="text-lg font-bold text-primary-foreground">3D Model — View in AR</h3>
-              </div>
-              <div className="p-4">
+  <div className="bg-primary px-6 py-4 flex items-center gap-3">
+    <IconAR className="w-6 h-6 text-primary-foreground" />
+    <h3 className="text-lg font-bold text-primary-foreground">3D Model — View in AR</h3>
+  </div>
+  <div className="p-4">
                 <model-viewer
                   src="/models/sigiriya.glb"
                   poster="/images/sigiriya-main.jpg"
