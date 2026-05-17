@@ -8,7 +8,10 @@ import userContentRouter from './api/userContent';
 const app = express();
 
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: [
+    'http://localhost:5173',                   
+    'https://final-year-project2-dwfu-efbxolacm.vercel.app',              
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
