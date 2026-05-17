@@ -240,14 +240,14 @@ const destination = {
   visitorInfo: {
     openingHours: "7:00 AM - 5:30 PM (Daily)",
     closedDates: [
-    "January 14 – Tamil Thai Pongal",
-    "February 4 – National Day",
-    "April 13 – Sinhala & Tamil New Year Eve",
-    "April 14 – Sinhala & Tamil New Year",
-    "May 1 – Labour Day",
-    "May (Full Moon) – Vesak Poya",
-    "December 25 – Christmas Day",
-  ],
+      "January 14 – Tamil Thai Pongal",
+      "February 4 – National Day",
+      "April 13 – Sinhala & Tamil New Year Eve",
+      "April 14 – Sinhala & Tamil New Year",
+      "May 1 – Labour Day",
+      "May (Full Moon) – Vesak Poya",
+      "December 25 – Christmas Day",
+    ],
     entryFees: {
       foreignAdultUSD: 30,
       foreignChildUSD: 15,
@@ -511,23 +511,24 @@ export default function DestinationDetailPage() {
                     <p className="font-semibold text-foreground">{destination.visitorInfo.openingHours}</p>
                   </div>
                 </div>
+
                 {/* Closed / Public Holidays */}
-<div className="flex items-start gap-4">
-  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center">
-    <IconCalendar className="w-5 h-5" />
-  </div>
-  <div className="flex-1">
-    <p className="text-sm text-muted-foreground mb-2">Closed on Public Holidays</p>
-    <ul className="space-y-1">
-      {destination.visitorInfo.closedDates.map((date, i) => (
-        <li key={i} className="flex items-center gap-2 text-xs text-foreground">
-          <span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
-          {date}
-        </li>
-      ))}
-    </ul>
-  </div>
-</div>
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center">
+                    <IconCalendar className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-muted-foreground mb-2">Closed on Public Holidays</p>
+                    <ul className="space-y-1">
+                      {destination.visitorInfo.closedDates.map((date, i) => (
+                        <li key={i} className="flex items-center gap-2 text-xs text-foreground">
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
+                          {date}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
 
                 {/* Entry Fees */}
                 <div className="flex items-start gap-4">
@@ -552,7 +553,7 @@ export default function DestinationDetailPage() {
               </div>
             </div>
 
-            {/* ── WEATHER: single component, no wrapper ── */}
+            {/* Weather */}
             <WeatherForecast />
 
             {/* Best Time to Visit */}
@@ -582,49 +583,22 @@ export default function DestinationDetailPage() {
               </div>
             </div>
 
-            {/* AR Model Viewer */}
+            {/* AR Model Viewer — Sketchfab embed */}
             <div className="bg-card rounded-xl border border-border shadow-lg overflow-hidden">
-  <div className="bg-primary px-6 py-4 flex items-center gap-3">
-    <IconAR className="w-6 h-6 text-primary-foreground" />
-    <h3 className="text-lg font-bold text-primary-foreground">3D Model — View in AR</h3>
-  </div>
-  <div className="p-4">
-                <model-viewer
-                  src="/models/sigiriya.glb"
-                  poster="/images/sigiriya-main.jpg"
-                  alt="3D model of Sigiriya Rock Fortress"
-                  shadow-intensity="1"
-                  camera-controls
-                  auto-rotate
-                  ar
-                  ar-modes="webxr scene-viewer quick-look"
-                  style={{ width: "100%", height: "320px", borderRadius: "0.5rem", background: "#f1f5f9" }}
-                >
-                  <button
-                    slot="ar-button"
-                    style={{
-                      position: "absolute",
-                      bottom: "12px",
-                      right: "12px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      background: "var(--color-primary, #0d9488)",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "0.75rem",
-                      padding: "10px 18px",
-                      fontWeight: "700",
-                      fontSize: "14px",
-                      cursor: "pointer",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-                    }}
-                  >
-                    📱 View in AR
-                  </button>
-                </model-viewer>
+              <div className="bg-primary px-6 py-4 flex items-center gap-3">
+                <IconAR className="w-6 h-6 text-primary-foreground" />
+                <h3 className="text-lg font-bold text-primary-foreground">3D Model — View in AR</h3>
+              </div>
+              <div className="p-4">
+                <iframe
+                  title="Sigiriya 3D Model"
+                  src="https://sketchfab.com/models/5168fd1978bd439f82adb4ac7410cf1e/embed?autostart=1&ui_theme=dark"
+                  style={{ width: "100%", height: "320px", borderRadius: "0.5rem", border: "none" }}
+                  allow="autoplay; fullscreen; xr-spatial-tracking"
+                  allowFullScreen
+                />
                 <p className="text-xs text-muted-foreground mt-3 text-center">
-                  🖱️ Drag to rotate · Scroll to zoom · Tap "View in AR" on mobile to place in your space
+                  🖱️ Drag to rotate · Scroll to zoom · View in AR on mobile
                 </p>
               </div>
             </div>
@@ -665,30 +639,30 @@ export default function DestinationDetailPage() {
           </div>
         </section>
 
-       {/* Where to Stay */}
-<section className="mt-16">
-  <h2 className="text-2xl font-bold text-foreground mb-6">Where to Stay</h2>
-  <div className="bg-card rounded-xl border border-border shadow-md p-8 flex flex-col sm:flex-row items-center justify-between gap-6">
-    <div className="flex items-center gap-5">
-      <div className="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-        <img src="/images/booking-logo.png" alt="Booking.com" className="w-10 object-contain" />
-      </div>
-      <div>
-        <h3 className="font-bold text-foreground text-lg">Find Hotels near {destination.name}</h3>
-        <p className="text-sm text-muted-foreground mt-1">Browse and compare hotels, resorts, and guesthouses in the area on Booking.com.</p>
-      </div>
-    </div>
-   <a 
-   href="https://www.booking.com/searchresults.html?ss=Sigiriya+Sri+Lanka"
-  target="_blank"
-  rel="noopener noreferrer"
-  className="shrink-0 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 rounded-xl transition-colors shadow-md"
->
-  Search on Booking.com
-  <IconChevronRight className="w-4 h-4" />
-</a>
-  </div>
-</section>
+        {/* Where to Stay */}
+        <section className="mt-16">
+          <h2 className="text-2xl font-bold text-foreground mb-6">Where to Stay</h2>
+          <div className="bg-card rounded-xl border border-border shadow-md p-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-5">
+              <div className="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                <img src="/images/booking-logo.png" alt="Booking.com" className="w-10 object-contain" />
+              </div>
+              <div>
+                <h3 className="font-bold text-foreground text-lg">Find Hotels near {destination.name}</h3>
+                <p className="text-sm text-muted-foreground mt-1">Browse and compare hotels, resorts, and guesthouses in the area on Booking.com.</p>
+              </div>
+            </div>
+            <a
+              href="https://www.booking.com/searchresults.html?ss=Sigiriya+Sri+Lanka"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 rounded-xl transition-colors shadow-md"
+            >
+              Search on Booking.com
+              <IconChevronRight className="w-4 h-4" />
+            </a>
+          </div>
+        </section>
 
         {/* Location */}
         <section className="mt-16">
