@@ -8,10 +8,17 @@ import userContentRouter from './api/userContent';
 const app = express();
 
 app.use(cors({
-  origin: [
-    'http://localhost:5173',                   
-    'https://final-year-project2-dwfu-efbxolacm.vercel.app',              
-  ],
+  origin: (origin, callback) => {
+    const allowed = [
+      /\.vercel\.app$/,
+      /localhost/,
+    ];
+    if (!origin || allowed.some(pattern => pattern.test(origin))) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
