@@ -10,7 +10,7 @@ const app = express();
 app.use(cors({
   origin: (origin, callback) => {
     const allowed = [
-      /\.vercel\.app$/,
+      /\.vercel\.app$/,  // allows all vercel preview URLs
       /localhost/,
     ];
     if (!origin || allowed.some(pattern => pattern.test(origin))) {
