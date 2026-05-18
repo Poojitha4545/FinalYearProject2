@@ -437,11 +437,11 @@ const ExperiencesPage = () => {
 
   const MOCK_EXPERIENCES = [
     {
-     user: {
-  _id:    p.userId?._id,          
-  name:   p.userId?.fullName ?? "Traveler",
-  avatar: p.userId?.avatar ?? `...`,
-},
+      id: '1', type: 'image', url: '/images/exp-anuradhapura.jpg',
+      user: { name: 'Sarah_Explorer', avatar: 'https://i.pravatar.cc/150?u=sarah' },
+      location: 'Anuradhapura', likes: 1240, comments: 86, views: 5200,
+      caption: 'Walking through history in the ancient kingdom. The serene atmosphere of these ruins is something you can only feel in person.',
+    },
     {
       id: '2', type: 'video', url: '/images/exp-mirissa.mp4',
       user: { name: 'OceanBlue', avatar: 'https://i.pravatar.cc/150?u=ocean' },
