@@ -17,6 +17,7 @@ import {
   Upload,
   ImagePlus,
   CheckCircle,
+  Trash2,
 } from 'lucide-react';
 
 const TOP_CONTRIBUTORS = [
@@ -249,80 +250,166 @@ const ShareModal = ({ user, onClose, onPost }) => {
   );
 };
 
-// ─── Experience Card ──────────────────────────────────────────────────────────
-const ExperienceCard = ({ experience }) => {
-  const [isHovered, setIsHovered] = useState(false);
-  return (
+// ─── Delete Confirm Modal ─────────────────────────────────────────────────────
+const DeleteConfirmModal = ({ onConfirm, onCancel, isDeleting }) => (
+  <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -4 }}
-      className="relative mb-6 group break-inside-avoid"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      initial={{ scale: 0.9, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      exit={{ scale: 0.9, opacity: 0 }}
+      className="bg-white rounded-[32px] p-8 max-w-sm w-full text-center shadow-2xl"
     >
-      <div className="relative overflow-hidden rounded-3xl bg-gray-100 shadow-sm transition-shadow hover:shadow-xl">
-        <img
-          src={experience.url}
-          alt={experience.caption}
-          className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105"
-        />
-        {experience.type === 'video' && (
-          <div className="absolute top-4 right-4 w-10 h-10 bg-black/30 backdrop-blur-md rounded-full flex items-center justify-center text-white">
-            <Play className="w-5 h-5 fill-current" />
-          </div>
-        )}
-        <div className="absolute top-4 left-4 flex items-center gap-2">
-          <img
-            src={experience.user.avatar}
-            className="w-8 h-8 rounded-full border-2 border-white shadow-md"
-            alt={experience.user.name}
-          />
-          <span className={`text-[10px] font-bold text-white drop-shadow-md transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
-            @{experience.user.name}
-          </span>
-        </div>
-        <AnimatePresence>
-          {isHovered && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6 text-white"
-            >
-              <p className="text-sm line-clamp-3 mb-6 font-light leading-relaxed">{experience.caption}</p>
-              <button className="w-full bg-white text-gray-900 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-sri-teal hover:text-white transition-colors">
-                View Details
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+      <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-5">
+        <Trash2 className="w-8 h-8 text-red-500" />
       </div>
-      <div className="mt-3 flex items-center justify-between px-2">
-        <div className="flex items-center gap-1 text-gray-400">
-          <MapPin className="w-3 h-3 text-sri-orange" />
-          <span className="text-[10px] font-bold uppercase tracking-wider">{experience.location}</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 transition-colors hover:text-sri-maroon cursor-pointer group/stat">
-            <Heart className="w-4 h-4 text-gray-300 group-hover/stat:fill-sri-maroon group-hover/stat:text-sri-maroon" />
-            <span className="text-xs font-bold text-gray-500">
-              {experience.likes >= 1000 ? `${(experience.likes / 1000).toFixed(1)}k` : experience.likes}
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            <MessageCircle className="w-4 h-4 text-gray-300" />
-            <span className="text-xs font-bold text-gray-500">{experience.comments}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Eye className="w-4 h-4 text-gray-300" />
-            <span className="text-xs font-bold text-gray-500">
-              {experience.views >= 1000 ? `${(experience.views / 1000).toFixed(1)}k` : experience.views}
-            </span>
-          </div>
-        </div>
+      <h3 className="text-xl font-bold mb-2 font-sans">Delete this post?</h3>
+      <p className="text-gray-400 text-sm mb-8 leading-relaxed">
+        This action cannot be undone. Your experience will be permanently removed from the wall.
+      </p>
+      <div className="flex gap-3">
+        <button
+          onClick={onCancel}
+          disabled={isDeleting}
+          className="flex-1 py-3 rounded-2xl font-bold text-sm border-2 border-gray-100 text-gray-600 hover:border-gray-300 transition-all disabled:opacity-40"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={onConfirm}
+          disabled={isDeleting}
+          className="flex-1 py-3 rounded-2xl font-bold text-sm bg-red-500 text-white hover:bg-red-600 transition-all shadow-lg shadow-red-500/20 disabled:opacity-40 flex items-center justify-center gap-2"
+        >
+          {isDeleting ? (
+            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : (
+            <Trash2 className="w-4 h-4" />
+          )}
+          {isDeleting ? "Deleting…" : "Yes, Delete"}
+        </button>
       </div>
     </motion.div>
+  </div>
+);
+
+// ─── Experience Card ──────────────────────────────────────────────────────────
+const ExperienceCard = ({ experience, currentUser, onDelete }) => {
+  const [isHovered, setIsHovered]           = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting]         = useState(false);
+
+  // Check ownership by user id (real posts) or fallback to name (mock posts)
+  const isOwner =
+    currentUser &&
+    (
+      (currentUser._id && experience.user._id && currentUser._id === experience.user._id) ||
+      currentUser.name === experience.user.name
+    );
+
+  const handleDeleteConfirm = async () => {
+    setIsDeleting(true);
+    await onDelete(experience.id);
+    setIsDeleting(false);
+    setShowDeleteConfirm(false);
+  };
+
+  return (
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        whileHover={{ y: -4 }}
+        className="relative mb-6 group break-inside-avoid"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <div className="relative overflow-hidden rounded-3xl bg-gray-100 shadow-sm transition-shadow hover:shadow-xl">
+          <img
+            src={experience.url}
+            alt={experience.caption}
+            className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+          {experience.type === 'video' && (
+            <div className="absolute top-4 right-4 w-10 h-10 bg-black/30 backdrop-blur-md rounded-full flex items-center justify-center text-white">
+              <Play className="w-5 h-5 fill-current" />
+            </div>
+          )}
+
+          {/* Owner delete button — top-right, visible on hover */}
+          {isOwner && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }}
+              className={`absolute top-4 right-4 w-9 h-9 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-white shadow-lg transition-all duration-200 ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}
+              title="Delete post"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+
+          <div className="absolute top-4 left-4 flex items-center gap-2">
+            <img
+              src={experience.user.avatar}
+              className="w-8 h-8 rounded-full border-2 border-white shadow-md"
+              alt={experience.user.name}
+            />
+            <span className={`text-[10px] font-bold text-white drop-shadow-md transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+              @{experience.user.name}
+            </span>
+          </div>
+
+          <AnimatePresence>
+            {isHovered && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6 text-white"
+              >
+                <p className="text-sm line-clamp-3 mb-6 font-light leading-relaxed">{experience.caption}</p>
+                <button className="w-full bg-white text-gray-900 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-sri-teal hover:text-white transition-colors">
+                  View Details
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <div className="mt-3 flex items-center justify-between px-2">
+          <div className="flex items-center gap-1 text-gray-400">
+            <MapPin className="w-3 h-3 text-sri-orange" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">{experience.location}</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 transition-colors hover:text-sri-maroon cursor-pointer group/stat">
+              <Heart className="w-4 h-4 text-gray-300 group-hover/stat:fill-sri-maroon group-hover/stat:text-sri-maroon" />
+              <span className="text-xs font-bold text-gray-500">
+                {experience.likes >= 1000 ? `${(experience.likes / 1000).toFixed(1)}k` : experience.likes}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <MessageCircle className="w-4 h-4 text-gray-300" />
+              <span className="text-xs font-bold text-gray-500">{experience.comments}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Eye className="w-4 h-4 text-gray-300" />
+              <span className="text-xs font-bold text-gray-500">
+                {experience.views >= 1000 ? `${(experience.views / 1000).toFixed(1)}k` : experience.views}
+              </span>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Delete confirmation modal */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <DeleteConfirmModal
+            onConfirm={handleDeleteConfirm}
+            onCancel={() => setShowDeleteConfirm(false)}
+            isDeleting={isDeleting}
+          />
+        )}
+      </AnimatePresence>
+    </>
   );
 };
 
@@ -413,6 +500,7 @@ const ExperiencesPage = () => {
         comments: p.comments.length,
         views:    0,
         user: {
+          _id:    p.userId?._id,
           name:   p.userId?.fullName ?? "Traveler",
           avatar: p.userId?.avatar  ?? `https://ui-avatars.com/api/?name=T&background=0d9488&color=fff`,
         },
@@ -423,6 +511,28 @@ const ExperiencesPage = () => {
       setExperiences(MOCK_EXPERIENCES);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // ── Delete a post ─────────────────────────────────────────────────────────
+  const handleDelete = async (postId) => {
+    // Mock posts (id is a plain number string like '1'–'8') — just remove from state
+    const isMock = MOCK_EXPERIENCES.some((m) => m.id === postId);
+    if (isMock) {
+      setExperiences((prev) => prev.filter((e) => e.id !== postId));
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/user-content/${postId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Delete failed");
+      setExperiences((prev) => prev.filter((e) => e.id !== postId));
+    } catch (err) {
+      alert("Could not delete post. Please try again.");
     }
   };
 
@@ -443,7 +553,6 @@ const ExperiencesPage = () => {
   // ── Auto-open share modal when navigated here from Dashboard ─────────────
   useEffect(() => {
     if (routerLocation.state?.openShare) {
-      // Small delay so the page and user state can settle first
       const timer = setTimeout(() => {
         handleShareClick();
       }, 150);
@@ -557,7 +666,12 @@ const ExperiencesPage = () => {
         ) : (
           <div className="columns-1 sm:columns-2 lg:columns-4 gap-6">
             {experiences.map((exp) => (
-              <ExperienceCard key={exp.id} experience={exp} />
+              <ExperienceCard
+                key={exp.id}
+                experience={exp}
+                currentUser={currentUser}
+                onDelete={handleDelete}
+              />
             ))}
           </div>
         )}
