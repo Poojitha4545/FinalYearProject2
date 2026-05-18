@@ -297,13 +297,14 @@ const ExperienceCard = ({ experience, currentUser, onDelete }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting]         = useState(false);
 
-  // Check ownership by user id (real posts) or fallback to name (mock posts)
-  const isOwner =
-    currentUser &&
-    (
-      (currentUser._id && experience.user._id && currentUser._id === experience.user._id) ||
-      currentUser.name === experience.user.name
-    );
+
+const isOwner =
+  currentUser && (
+    (currentUser._id && experience.user._id && 
+      String(currentUser._id) === String(experience.user._id)) ||
+    (currentUser.fullName && currentUser.fullName === experience.user.name) ||
+    (currentUser.name && currentUser.name === experience.user.name)
+  );
 
   const handleDeleteConfirm = async () => {
     setIsDeleting(true);
@@ -436,11 +437,11 @@ const ExperiencesPage = () => {
 
   const MOCK_EXPERIENCES = [
     {
-      id: '1', type: 'image', url: '/images/exp-anuradhapura.jpg',
-      user: { name: 'Sarah_Explorer', avatar: 'https://i.pravatar.cc/150?u=sarah' },
-      location: 'Anuradhapura', likes: 1240, comments: 86, views: 5200,
-      caption: 'Walking through history in the ancient kingdom. The serene atmosphere of these ruins is something you can only feel in person.',
-    },
+     user: {
+  _id:    p.userId?._id,          
+  name:   p.userId?.fullName ?? "Traveler",
+  avatar: p.userId?.avatar ?? `...`,
+},
     {
       id: '2', type: 'video', url: '/images/exp-mirissa.mp4',
       user: { name: 'OceanBlue', avatar: 'https://i.pravatar.cc/150?u=ocean' },
