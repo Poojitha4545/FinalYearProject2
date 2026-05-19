@@ -36,7 +36,13 @@ const normalizeUser = (raw) => {
     raw.profilePicture ||
     raw.profileImage ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=0d9488&color=fff&size=128`;
-  return { ...raw, name: displayName, avatar };
+  return {
+    ...raw,
+    name:  displayName,
+    avatar,
+    _id:   raw._id || raw.id,   // ← normalize so _id is always set
+    id:    raw.id  || raw._id,
+  };
 };
 
 // ─── Auth Modal ───────────────────────────────────────────────────────────────
@@ -299,21 +305,9 @@ const ExperienceCard = ({ experience, currentUser, onDelete }) => {
 
   // ── Robust owner check: tries every field that could match ───────────────
   const isOwner =
-    currentUser &&
-    (
-      // MongoDB _id match (real posts from API)
-      (currentUser._id && experience.user._id &&
-        String(currentUser._id) === String(experience.user._id)) ||
-      // fullName match (API returns fullName, normalized to name)
-      (currentUser.fullName &&
-        currentUser.fullName === experience.user.name) ||
-      // normalized name match
-      (currentUser.name &&
-        currentUser.name === experience.user.name) ||
-      // email prefix match (e.g. "john" from "john@example.com")
-      (currentUser.email &&
-        currentUser.email.split('@')[0] === experience.user.name)
-    );
+  !!currentUser &&
+  !!experience.user._id &&
+  String(experience.user._id).trim() === String(currentUser._id).trim();
 
   const handleDeleteConfirm = async () => {
     setIsDeleting(true);
@@ -512,20 +506,22 @@ const ExperiencesPage = () => {
       const res  = await fetch(`${import.meta.env.VITE_API_URL}/api/user-content`);
       const data = await res.json();
       const realPosts = (data.posts ?? []).map((p) => ({
-        id:       p._id,
-        type:     p.mediaType,
-        url:      p.mediaUrl,
-        location: p.location,
-        caption:  p.caption,
-        likes:    p.likes.count,
-        comments: p.comments.length,
-        views:    0,
-        user: {
-          _id:    p.userId?._id,
-          name:   p.userId?.fullName ?? "Traveler",
-          avatar: p.userId?.avatar  ?? `https://ui-avatars.com/api/?name=T&background=0d9488&color=fff`,
-        },
-      }));
+  id:       p._id,
+  type:     p.mediaType,
+  url:      p.mediaUrl,
+  location: p.location,
+  caption:  p.caption,
+  likes:    p.likes.count,
+  comments: p.comments.length,
+  views:    0,
+  user: {
+    // If userId is populated object use ._id, if it's just a string use it directly
+    _id:    p.userId?._id ?? p.userId,
+    name:   p.userId?.fullName ?? p.userId?.name ?? "Traveler",
+    avatar: p.userId?.avatar ??
+            `https://ui-avatars.com/api/?name=T&background=0d9488&color=fff`,
+  },
+}));
       setExperiences([...realPosts, ...MOCK_EXPERIENCES]);
     } catch (err) {
       console.error("Failed to fetch posts:", err);
