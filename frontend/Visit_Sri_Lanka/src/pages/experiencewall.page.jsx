@@ -26,8 +26,20 @@ const TOP_CONTRIBUTORS = [
   { name: 'TrainTraveler',  avatar: 'https://i.pravatar.cc/150?u=train', posts: 84,  points: '3.9k' },
 ];
 
+// ─── Decode JWT to get userId without a library ───────────────────────────────
+const getUserIdFromToken = (token) => {
+  try {
+    const payload = token.split('.')[1];
+    const decoded = JSON.parse(atob(payload));
+    // Try every common JWT field for user id
+    return decoded._id || decoded.id || decoded.userId || decoded.sub || null;
+  } catch {
+    return null;
+  }
+};
+
 // ─── Helper: normalize user from localStorage ─────────────────────────────────
-const normalizeUser = (raw) => {
+const normalizeUser = (raw, token) => {
   if (!raw) return null;
   const displayName =
     raw.fullName || raw.name || raw.username || raw.email?.split('@')[0] || 'Traveler';
@@ -36,12 +48,16 @@ const normalizeUser = (raw) => {
     raw.profilePicture ||
     raw.profileImage ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=0d9488&color=fff&size=128`;
+
+  // Get _id from stored object first, then fall back to decoding the JWT
+  const _id = raw._id || raw.id || raw.userId || (token ? getUserIdFromToken(token) : null);
+
   return {
     ...raw,
-    name:  displayName,
+    name:   displayName,
     avatar,
-    _id:   raw._id || raw.id,   // ← normalize so _id is always set
-    id:    raw.id  || raw._id,
+    _id:    String(_id ?? ''),
+    id:     String(_id ?? ''),
   };
 };
 
@@ -54,26 +70,17 @@ const AuthModal = ({ onClose }) => (
       exit={{ scale: 0.9, opacity: 0 }}
       className="bg-white rounded-[40px] p-10 max-w-md w-full text-center shadow-2xl relative"
     >
-      <button
-        onClick={onClose}
-        className="absolute top-6 right-6 text-gray-400 hover:text-gray-900 transition-colors"
-      >
+      <button onClick={onClose} className="absolute top-6 right-6 text-gray-400 hover:text-gray-900 transition-colors">
         <X className="w-6 h-6" />
       </button>
-
       <div className="w-20 h-20 bg-sri-teal/10 rounded-full flex items-center justify-center mx-auto mb-6">
         <Camera className="w-10 h-10 text-sri-teal" />
       </div>
-
       <h3 className="text-2xl font-bold mb-2 font-sans">Share Your Adventure</h3>
       <p className="text-gray-500 mb-8 leading-relaxed text-sm">
         Join our community of global travelers to share your Sri Lankan adventures and earn points for travel discounts.
       </p>
-
-      <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-5">
-        Choose an option to continue
-      </p>
-
+      <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-5">Choose an option to continue</p>
       <div className="space-y-4">
         <Link
           to="/login"
@@ -92,7 +99,6 @@ const AuthModal = ({ onClose }) => (
           Create a New Account
         </Link>
       </div>
-
       <p className="mt-8 text-xs text-gray-400">
         By continuing, you agree to our{' '}
         <a href="#" className="underline hover:text-sri-teal">Terms of Service</a>.
@@ -156,10 +162,7 @@ const ShareModal = ({ user, onClose, onPost }) => {
         exit={{ scale: 0.9, opacity: 0 }}
         className="bg-white rounded-[40px] p-8 max-w-lg w-full shadow-2xl relative max-h-[90vh] overflow-y-auto"
       >
-        <button
-          onClick={onClose}
-          className="absolute top-6 right-6 text-gray-400 hover:text-gray-900 transition-colors"
-        >
+        <button onClick={onClose} className="absolute top-6 right-6 text-gray-400 hover:text-gray-900 transition-colors">
           <X className="w-6 h-6" />
         </button>
 
@@ -188,9 +191,7 @@ const ShareModal = ({ user, onClose, onPost }) => {
               )}
               <div>
                 <p className="font-bold text-gray-900 text-sm">{user?.name}</p>
-                <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">
-                  Sharing a new experience
-                </p>
+                <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Sharing a new experience</p>
               </div>
             </div>
 
@@ -303,11 +304,29 @@ const ExperienceCard = ({ experience, currentUser, onDelete }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting]               = useState(false);
 
-  // ── Robust owner check: tries every field that could match ───────────────
-  const isOwner =
-  !!currentUser &&
-  !!experience.user._id &&
-  String(experience.user._id).trim() === String(currentUser._id).trim();
+  // ── Owner check: ID first, then name fallbacks ────────────────────────────
+  const isOwner = (() => {
+    if (!currentUser) return false;
+
+    const cuId   = String(currentUser._id || currentUser.id || '').trim();
+    const euId   = String(experience.user._id || '').trim();
+    const cuName = (currentUser.name || currentUser.fullName || '').trim().toLowerCase();
+    const euName = (experience.user.name || '').trim().toLowerCase();
+
+    // 1. ID match — most reliable (works when backend populates userId)
+    if (cuId && euId && cuId !== '' && euId !== '' && cuId === euId) return true;
+
+    // 2. Name match (case-insensitive) — fallback when userId not populated
+    if (cuName && euName && cuName === euName) return true;
+
+    // 3. Email prefix match — e.g. "tom carter" vs "tom"
+    if (currentUser.email && euName) {
+      const prefix = currentUser.email.split('@')[0].toLowerCase();
+      if (prefix === euName) return true;
+    }
+
+    return false;
+  })();
 
   const handleDeleteConfirm = async () => {
     setIsDeleting(true);
@@ -333,27 +352,22 @@ const ExperienceCard = ({ experience, currentUser, onDelete }) => {
             className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105"
           />
 
+          {/* Video indicator — shift left when delete btn is present */}
           {experience.type === 'video' && (
-            <div className="absolute top-4 right-4 w-10 h-10 bg-black/30 backdrop-blur-md rounded-full flex items-center justify-center text-white">
+            <div className={`absolute top-3 w-10 h-10 bg-black/30 backdrop-blur-md rounded-full flex items-center justify-center text-white ${isOwner ? 'right-16' : 'right-3'}`}>
               <Play className="w-5 h-5 fill-current" />
             </div>
           )}
 
-          {/* ── Delete button: always visible for owner, subtle until hover ── */}
+          {/* ── Delete button: always visible pill for owner ─────────────── */}
           {isOwner && (
             <button
               onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }}
-              className={`
-                absolute top-3 right-3 w-9 h-9
-                bg-red-500 hover:bg-red-600
-                rounded-full flex items-center justify-center
-                text-white shadow-lg
-                transition-all duration-200
-                ${isHovered ? 'opacity-100 scale-100' : 'opacity-70 scale-95'}
-              `}
+              className="absolute top-3 right-3 z-20 flex items-center gap-1.5 bg-red-500 hover:bg-red-600 active:scale-95 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg transition-all duration-150"
               title="Delete post"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5" />
+              Delete
             </button>
           )}
 
@@ -361,7 +375,7 @@ const ExperienceCard = ({ experience, currentUser, onDelete }) => {
           <div className="absolute top-4 left-4 flex items-center gap-2">
             <img
               src={experience.user.avatar}
-              className="w-8 h-8 rounded-full border-2 border-white shadow-md"
+              className="w-8 h-8 rounded-full border-2 border-white shadow-md object-cover"
               alt={experience.user.name}
             />
             <span className={`text-[10px] font-bold text-white drop-shadow-md transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
@@ -414,7 +428,6 @@ const ExperienceCard = ({ experience, currentUser, onDelete }) => {
         </div>
       </motion.div>
 
-      {/* Delete confirmation modal */}
       <AnimatePresence>
         {showDeleteConfirm && (
           <DeleteConfirmModal
@@ -452,49 +465,49 @@ const ExperiencesPage = () => {
   const MOCK_EXPERIENCES = [
     {
       id: '1', type: 'image', url: '/images/exp-anuradhapura.jpg',
-      user: { name: 'Sarah_Explorer', avatar: 'https://i.pravatar.cc/150?u=sarah' },
+      user: { _id: null, name: 'Sarah_Explorer', avatar: 'https://i.pravatar.cc/150?u=sarah' },
       location: 'Anuradhapura', likes: 1240, comments: 86, views: 5200,
       caption: 'Walking through history in the ancient kingdom. The serene atmosphere of these ruins is something you can only feel in person.',
     },
     {
       id: '2', type: 'video', url: '/images/exp-mirissa.mp4',
-      user: { name: 'OceanBlue', avatar: 'https://i.pravatar.cc/150?u=ocean' },
+      user: { _id: null, name: 'OceanBlue', avatar: 'https://i.pravatar.cc/150?u=ocean' },
       location: 'Mirissa', likes: 3100, comments: 245, views: 12000,
       caption: 'Caught a glimpse of the giant of the deep! 🐋 Whale watching in Mirissa is an experience of a lifetime.',
     },
     {
       id: '3', type: 'image', url: '/images/exp-nuwaraeliya.jpg',
-      user: { name: 'TeaLover_SL', avatar: 'https://i.pravatar.cc/150?u=tea' },
+      user: { _id: null, name: 'TeaLover_SL', avatar: 'https://i.pravatar.cc/150?u=tea' },
       location: 'Nuwara Eliya', likes: 890, comments: 42, views: 3100,
       caption: 'The misty mornings in the tea plantations. There is no tea better than Ceylon tea right at the source.',
     },
     {
       id: '4', type: 'image', url: '/images/exp-sigiriya.jpg',
-      user: { name: 'KingPeak', avatar: 'https://i.pravatar.cc/150?u=king' },
+      user: { _id: null, name: 'KingPeak', avatar: 'https://i.pravatar.cc/150?u=king' },
       location: 'Sigiriya', likes: 5600, comments: 412, views: 25000,
       caption: 'The golden hour at the Lion Rock. Climbing this masterpiece of ancient urban planning is a must!',
     },
     {
       id: '5', type: 'image', url: '/images/exp-yala.jpg',
-      user: { name: 'WildLifeCam', avatar: 'https://i.pravatar.cc/150?u=wild' },
+      user: { _id: null, name: 'WildLifeCam', avatar: 'https://i.pravatar.cc/150?u=wild' },
       location: 'Yala National Park', likes: 2100, comments: 112, views: 8900,
       caption: 'Stared directly into the eyes of a leopard today. What a majestic predator! 🐆',
     },
     {
       id: '6', type: 'video', url: '/images/exp-ella.mp4',
-      user: { name: 'TrainTraveler', avatar: 'https://i.pravatar.cc/150?u=train' },
+      user: { _id: null, name: 'TrainTraveler', avatar: 'https://i.pravatar.cc/150?u=train' },
       location: 'Ella', likes: 4200, comments: 320, views: 18000,
       caption: 'That iconic train ride. The views between Kandy and Ella are incomparable.',
     },
     {
       id: '7', type: 'image', url: '/images/exp-colombo.jpg',
-      user: { name: 'CityLights_CMB', avatar: 'https://i.pravatar.cc/150?u=colombo' },
+      user: { _id: null, name: 'CityLights_CMB', avatar: 'https://i.pravatar.cc/150?u=colombo' },
       location: 'Colombo', likes: 1100, comments: 54, views: 4200,
       caption: 'The skyline of Colombo meets the Indian Ocean. A modern city with a timeless soul.',
     },
     {
       id: '8', type: 'image', url: '/images/exp-arugam.jpg',
-      user: { name: 'SurfBuddy', avatar: 'https://i.pravatar.cc/150?u=surf' },
+      user: { _id: null, name: 'SurfBuddy', avatar: 'https://i.pravatar.cc/150?u=surf' },
       location: 'Arugam Bay', likes: 1800, comments: 92, views: 7300,
       caption: 'Riding the swells in A-Bay. The energy here is just different. 🏄‍♂️',
     },
@@ -505,23 +518,40 @@ const ExperiencesPage = () => {
     try {
       const res  = await fetch(`${import.meta.env.VITE_API_URL}/api/user-content`);
       const data = await res.json();
-      const realPosts = (data.posts ?? []).map((p) => ({
-  id:       p._id,
-  type:     p.mediaType,
-  url:      p.mediaUrl,
-  location: p.location,
-  caption:  p.caption,
-  likes:    p.likes.count,
-  comments: p.comments.length,
-  views:    0,
-  user: {
-    // If userId is populated object use ._id, if it's just a string use it directly
-    _id:    p.userId?._id ?? p.userId,
-    name:   p.userId?.fullName ?? p.userId?.name ?? "Traveler",
-    avatar: p.userId?.avatar ??
-            `https://ui-avatars.com/api/?name=T&background=0d9488&color=fff`,
-  },
-}));
+
+      const realPosts = (data.posts ?? []).map((p) => {
+        const userIdObj   = p.userId;
+        const isPopulated = userIdObj && typeof userIdObj === 'object';
+
+        const postUserId = isPopulated
+          ? String(userIdObj._id ?? userIdObj.id ?? '')
+          : String(userIdObj ?? '');
+
+        const postUserName = isPopulated
+          ? (userIdObj.fullName ?? userIdObj.name ?? 'Traveler')
+          : 'Traveler';
+
+        const postUserAvatar = isPopulated
+          ? (userIdObj.avatar ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(postUserName)}&background=0d9488&color=fff`)
+          : `https://ui-avatars.com/api/?name=T&background=0d9488&color=fff`;
+
+        return {
+          id:       p._id,
+          type:     p.mediaType,
+          url:      p.mediaUrl,
+          location: p.location,
+          caption:  p.caption,
+          likes:    p.likes?.count ?? 0,
+          comments: p.comments?.length ?? 0,
+          views:    0,
+          user: {
+            _id:    postUserId,
+            name:   postUserName,
+            avatar: postUserAvatar,
+          },
+        };
+      });
+
       setExperiences([...realPosts, ...MOCK_EXPERIENCES]);
     } catch (err) {
       console.error("Failed to fetch posts:", err);
@@ -533,13 +563,11 @@ const ExperiencesPage = () => {
 
   // ── Delete a post ─────────────────────────────────────────────────────────
   const handleDelete = async (postId) => {
-    // Mock posts (id is a plain number string '1'–'8') — just remove from state
     const isMock = MOCK_EXPERIENCES.some((m) => m.id === postId);
     if (isMock) {
       setExperiences((prev) => prev.filter((e) => e.id !== postId));
       return;
     }
-
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/user-content/${postId}`, {
@@ -559,7 +587,9 @@ const ExperiencesPage = () => {
       const token  = localStorage.getItem("token");
       const stored = localStorage.getItem("user");
       if (token && stored) {
-        setCurrentUser(normalizeUser(JSON.parse(stored)));
+        const parsed     = JSON.parse(stored);
+        const normalized = normalizeUser(parsed, token);
+        setCurrentUser(normalized);
       }
     } catch (_) {}
   }, []);
@@ -570,9 +600,7 @@ const ExperiencesPage = () => {
   // ── Auto-open share modal when navigated here from Dashboard ─────────────
   useEffect(() => {
     if (routerLocation.state?.openShare) {
-      const timer = setTimeout(() => {
-        handleShareClick();
-      }, 150);
+      const timer = setTimeout(() => { handleShareClick(); }, 150);
       return () => clearTimeout(timer);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -584,7 +612,7 @@ const ExperiencesPage = () => {
       const token  = localStorage.getItem("token");
       const stored = localStorage.getItem("user");
       if (token && stored) {
-        const normalized = normalizeUser(JSON.parse(stored));
+        const normalized = normalizeUser(JSON.parse(stored), token);
         setCurrentUser(normalized);
         setShowShare(true);
       } else {
@@ -619,12 +647,9 @@ const ExperiencesPage = () => {
               <Camera className="w-5 h-5" />
               <span className="text-xs font-bold uppercase tracking-widest">Discover Stories</span>
             </div>
-            <h1 className="font-sans text-5xl md:text-6xl font-bold text-gray-900">
-              Experience Wall
-            </h1>
+            <h1 className="font-sans text-5xl md:text-6xl font-bold text-gray-900">Experience Wall</h1>
             <p className="text-gray-500 text-lg md:text-xl">Real Travelers, Real Stories.</p>
           </div>
-
           <button
             onClick={handleShareClick}
             className="bg-sri-teal text-white px-8 py-5 rounded-[24px] font-bold text-sm flex items-center gap-3 hover:shadow-2xl hover:shadow-sri-teal/20 transition-all active:scale-95 group"
@@ -638,9 +663,7 @@ const ExperiencesPage = () => {
         <div className="mb-20">
           <div className="flex items-center gap-3 mb-8">
             <Trophy className="w-5 h-5 text-sri-yellow" />
-            <h2 className="text-sm font-bold uppercase tracking-widest text-gray-400">
-              Monthly Top Contributors
-            </h2>
+            <h2 className="text-sm font-bold uppercase tracking-widest text-gray-400">Monthly Top Contributors</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {TOP_CONTRIBUTORS.map((user, i) => (
