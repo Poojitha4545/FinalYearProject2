@@ -293,18 +293,27 @@ const DeleteConfirmModal = ({ onConfirm, onCancel, isDeleting }) => (
 
 // ─── Experience Card ──────────────────────────────────────────────────────────
 const ExperienceCard = ({ experience, currentUser, onDelete }) => {
-  const [isHovered, setIsHovered]           = useState(false);
+  const [isHovered, setIsHovered]                 = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [isDeleting, setIsDeleting]         = useState(false);
+  const [isDeleting, setIsDeleting]               = useState(false);
 
-
-const isOwner =
-  currentUser && (
-    (currentUser._id && experience.user._id && 
-      String(currentUser._id) === String(experience.user._id)) ||
-    (currentUser.fullName && currentUser.fullName === experience.user.name) ||
-    (currentUser.name && currentUser.name === experience.user.name)
-  );
+  // ── Robust owner check: tries every field that could match ───────────────
+  const isOwner =
+    currentUser &&
+    (
+      // MongoDB _id match (real posts from API)
+      (currentUser._id && experience.user._id &&
+        String(currentUser._id) === String(experience.user._id)) ||
+      // fullName match (API returns fullName, normalized to name)
+      (currentUser.fullName &&
+        currentUser.fullName === experience.user.name) ||
+      // normalized name match
+      (currentUser.name &&
+        currentUser.name === experience.user.name) ||
+      // email prefix match (e.g. "john" from "john@example.com")
+      (currentUser.email &&
+        currentUser.email.split('@')[0] === experience.user.name)
+    );
 
   const handleDeleteConfirm = async () => {
     setIsDeleting(true);
@@ -329,23 +338,32 @@ const isOwner =
             alt={experience.caption}
             className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105"
           />
+
           {experience.type === 'video' && (
             <div className="absolute top-4 right-4 w-10 h-10 bg-black/30 backdrop-blur-md rounded-full flex items-center justify-center text-white">
               <Play className="w-5 h-5 fill-current" />
             </div>
           )}
 
-          {/* Owner delete button — top-right, visible on hover */}
+          {/* ── Delete button: always visible for owner, subtle until hover ── */}
           {isOwner && (
             <button
               onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }}
-              className={`absolute top-4 right-4 w-9 h-9 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-white shadow-lg transition-all duration-200 ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}
+              className={`
+                absolute top-3 right-3 w-9 h-9
+                bg-red-500 hover:bg-red-600
+                rounded-full flex items-center justify-center
+                text-white shadow-lg
+                transition-all duration-200
+                ${isHovered ? 'opacity-100 scale-100' : 'opacity-70 scale-95'}
+              `}
               title="Delete post"
             >
               <Trash2 className="w-4 h-4" />
             </button>
           )}
 
+          {/* Avatar + username */}
           <div className="absolute top-4 left-4 flex items-center gap-2">
             <img
               src={experience.user.avatar}
@@ -357,6 +375,7 @@ const isOwner =
             </span>
           </div>
 
+          {/* Hover overlay */}
           <AnimatePresence>
             {isHovered && (
               <motion.div
@@ -374,6 +393,7 @@ const isOwner =
           </AnimatePresence>
         </div>
 
+        {/* Location + stats */}
         <div className="mt-3 flex items-center justify-between px-2">
           <div className="flex items-center gap-1 text-gray-400">
             <MapPin className="w-3 h-3 text-sri-orange" />
@@ -517,7 +537,7 @@ const ExperiencesPage = () => {
 
   // ── Delete a post ─────────────────────────────────────────────────────────
   const handleDelete = async (postId) => {
-    // Mock posts (id is a plain number string like '1'–'8') — just remove from state
+    // Mock posts (id is a plain number string '1'–'8') — just remove from state
     const isMock = MOCK_EXPERIENCES.some((m) => m.id === postId);
     if (isMock) {
       setExperiences((prev) => prev.filter((e) => e.id !== postId));
